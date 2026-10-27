@@ -21,6 +21,14 @@ test('all authenticated roles can use role-scoped dashboard statistics', () => {
   for (const role of ['ADMINISTRATOR', 'LABORATORY_SCIENTIST', 'CLINICIAN'] as Role[])
     assert.equal(hasPermission(role, 'stats:read'), true);
 });
+test('only clinicians and scientists can use prediction endpoints', () => {
+  for (const role of ['LABORATORY_SCIENTIST', 'CLINICIAN'] as Role[]) {
+    assert.equal(hasPermission(role, 'predictions:create'), true);
+    assert.equal(hasPermission(role, 'predictions:read'), true);
+  }
+  assert.equal(hasPermission('ADMINISTRATOR', 'predictions:create'), false);
+  assert.equal(hasPermission('ADMINISTRATOR', 'predictions:read'), false);
+});
 test('clinicians cannot touch specimens or validate results', () => {
   assert.equal(hasPermission('CLINICIAN', 'specimens:write'), false);
   assert.equal(hasPermission('CLINICIAN', 'results:validate'), false);

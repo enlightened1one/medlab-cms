@@ -1,0 +1,178 @@
+{
+  "model_version": "medlab-synthetic-cbc-v1",
+  "model_type": "RandomForestClassifier",
+  "dataset": {
+    "name": "MedLab synthetic CBC pattern dataset",
+    "synthetic": true,
+    "rows": 5000,
+    "sha256": "6ce5e57c4464c59be7f823055741253b8b6f34beeccb7fd601c4d994f19789b6",
+    "label_method": "Deterministic, documented synthetic threshold rules; no random labels or patient data."
+  },
+  "label_rules": [
+    "synthetic_anemia_pattern: hemoglobin < 13.0 g/dL for MALE, < 12.0 for FEMALE, and < 12.5 for OTHER/UNKNOWN.",
+    "synthetic_red_cell_index_pattern: otherwise, MCV < 80 fL or > 100 fL.",
+    "synthetic_leukocyte_pattern: otherwise, WBC < 4 or > 11 x10^9/L.",
+    "synthetic_platelet_pattern: otherwise, platelets < 150 or > 450 x10^9/L.",
+    "within_synthetic_reference: none of the preceding synthetic threshold rules matched.",
+    "Precedence is the order listed; these are synthetic labeling rules, not clinical reference ranges."
+  ],
+  "training": {
+    "random_seed": 20261027,
+    "train_test_split": {
+      "test_size": 0.2,
+      "stratified": true
+    },
+    "cross_validation": "5-fold stratified CV on the training partition; pipeline preprocessing is fit within each fold.",
+    "trained_at_utc": "2026-10-27T11:18:18.708539+00:00",
+    "python_version": "3.14.8",
+    "scikit_learn_version": "1.9.1",
+    "dependencies": {
+      "fastapi": "0.162.0",
+      "joblib": "1.6.0",
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "python-dotenv": "1.2.4",
+      "scikit-learn": "1.9.1",
+      "uvicorn": "0.54.0"
+    }
+  },
+  "features": {
+    "age_years": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 120
+    },
+    "sex": {
+      "type": "category",
+      "values": [
+        "MALE",
+        "FEMALE",
+        "OTHER",
+        "UNKNOWN"
+      ]
+    },
+    "hemoglobin_g_dl": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 30
+    },
+    "mcv_fl": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 200
+    },
+    "wbc_10e9_l": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 500
+    },
+    "platelets_10e9_l": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5000
+    }
+  },
+  "classes": [
+    "synthetic_anemia_pattern",
+    "synthetic_leukocyte_pattern",
+    "synthetic_platelet_pattern",
+    "synthetic_red_cell_index_pattern",
+    "within_synthetic_reference"
+  ],
+  "metrics": {
+    "held_out": {
+      "accuracy": 1.0,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0,
+      "confusion_matrix": [
+        [
+          200,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          200,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          200,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          200,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          200
+        ]
+      ],
+      "confusion_matrix_labels": [
+        "synthetic_anemia_pattern",
+        "synthetic_leukocyte_pattern",
+        "synthetic_platelet_pattern",
+        "synthetic_red_cell_index_pattern",
+        "within_synthetic_reference"
+      ],
+      "per_class": {
+        "synthetic_anemia_pattern": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 200
+        },
+        "synthetic_leukocyte_pattern": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 200
+        },
+        "synthetic_platelet_pattern": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 200
+        },
+        "synthetic_red_cell_index_pattern": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 200
+        },
+        "within_synthetic_reference": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 200
+        }
+      }
+    },
+    "cross_validation_on_training_partition": {
+      "folds": 5,
+      "accuracy_mean": 1.0,
+      "accuracy_std": 0.0,
+      "macro_f1_mean": 1.0,
+      "macro_f1_std": 0.0
+    }
+  },
+  "limitations": [
+    "Educational prototype trained and evaluated only on synthetic data.",
+    "Metrics measure recovery of the synthetic labeling rules, not clinical validity or patient outcomes.",
+    "Not for diagnosis, screening, triage, treatment, or clinical decision-making."
+  ]
+}

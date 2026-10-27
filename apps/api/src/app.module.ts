@@ -16,6 +16,7 @@ import { ResultsModule } from './results/results.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { PredictionsModule } from './predictions/predictions.module';
 import { HealthController } from './health.controller';
 import { JwtAuthGuard, OriginGuard, PermissionsGuard } from './common/guards';
 
@@ -24,7 +25,7 @@ import { JwtAuthGuard, OriginGuard, PermissionsGuard } from './common/guards';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: resolve(process.cwd(), '../../.env'), validate: validateEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule, AuditModule, AuthModule, UsersModule, PatientsModule, TestsModule,
-    RequestsModule, SpecimensModule, ResultsModule, ReportsModule, DashboardModule, AuditLogsModule,
+    RequestsModule, SpecimensModule, ResultsModule, ReportsModule, DashboardModule, AuditLogsModule, PredictionsModule,
   ],
   controllers: [HealthController],
   providers: [ // order matters: throttle -> origin(CSRF) -> authenticate -> authorize (deny by default)
