@@ -6,6 +6,11 @@
       "framework": "nestjs",
       "installCommand": "pnpm install --frozen-lockfile --filter @medlab/api... --node-linker hoisted",
       "buildCommand": "pnpm exec prisma generate --schema prisma/schema.prisma && pnpm --filter @medlab/shared-types build && pnpm exec nest build",
+      "functions": {
+        "src/main.ts": {
+          "includeFiles": "node_modules/reflect-metadata/**/*"
+        }
+      },
       "bindings": [
         {
           "type": "service",
