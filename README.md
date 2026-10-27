@@ -148,6 +148,30 @@ pnpm --filter @medlab/web build
 The frontend has not been validated against authenticated server data or a production deployment. Do not claim
 browser-level workflow, accessibility, or end-to-end verification until those suites have been run.
 
+### Vercel multi-service deployment
+
+The root `vercel.json` defines three services: the public Next.js web app (`/`), the public NestJS API (`/api/*`),
+and an internal FastAPI ML service. The API declares a service binding to `ml-service`; Vercel injects its URL as
+`ML_SERVICE_URL` at runtime. Do not manually define `ML_SERVICE_URL` in Vercel. The browser uses the same-origin
+`/api/v1` path in production, which routes through the API rewrite; do not set `NEXT_PUBLIC_API_BASE_URL` to an
+internal service binding URL.
+
+Configure these Vercel environment variables for the API and ML service as applicable: `DATABASE_URL`,
+`DIRECT_URL`, `JWT_ACCESS_SECRET`, `ML_SERVICE_TOKEN`, `FRONTEND_URL`, and `CORS_ORIGINS`. `DATABASE_URL`,
+`DIRECT_URL`, `JWT_ACCESS_SECRET`, `FRONTEND_URL`, and `CORS_ORIGINS` are required by the API; `ML_SERVICE_TOKEN`
+is required by both the API and ML service and must have the same strong, unique value in both. `ML_SERVICE_URL`
+is injected into the API by the binding and must not be manually configured. Set `FRONTEND_URL` to the canonical
+web origin and include that origin in `CORS_ORIGINS`. In Vercel preview deployments, the API additionally allows
+only the matching `VERCEL_URL` hostname when `VERCEL_ENV=preview` and that hostname ends in `.vercel.app`; arbitrary
+origins and non-Vercel preview hosts are not allowed automatically. Configure SMTP values if password-reset email
+delivery is required. Never use demo credentials or placeholder secrets in deployment.
+
+Apply committed migrations from a trusted deployment environment with `pnpm db:migrate`; deployments do not
+automatically migrate the database or seed demo data. The ML model artifact and metadata must be present in the
+repository when building the ML service. Vercel service routing/bindings and these deployment steps have not yet
+been verified with a Vercel deployment. Confirm the service names, public routes, and API-to-ML binding before
+creating the Vercel project.
+
 ## Demo credentials (PUBLICLY KNOWN - never deploy with these)
 | Role | Email | Password |
 |---|---|---|

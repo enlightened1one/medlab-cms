@@ -97,7 +97,7 @@ export class PredictionsService {
     let payload: unknown;
     let invalidBody = false;
     try {
-      const response = await fetch(`${serviceUrl}/predict`, {
+      const response = await fetch(new URL('predict', `${serviceUrl}/`), {
         method: 'POST',
         headers: { authorization: `Bearer ${serviceToken}`, 'content-type': 'application/json' },
         body: JSON.stringify({ features: dto.features }),

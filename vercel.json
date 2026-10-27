@@ -1,0 +1,42 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "nestjs",
+      "buildCommand": "pnpm --filter @medlab/api exec prisma generate && pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/api build",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "ml-service",
+          "format": "url",
+          "env": "ML_SERVICE_URL"
+        }
+      ]
+    },
+    "ml-service": {
+      "root": "apps/ml-service",
+      "framework": "fastapi",
+      "entrypoint": "main:app"
+    },
+    "web": {
+      "root": "apps/web",
+      "framework": "nextjs",
+      "buildCommand": "pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/web build"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
+    }
+  ]
+}

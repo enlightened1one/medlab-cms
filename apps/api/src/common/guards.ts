@@ -5,6 +5,21 @@ import { hasPermission } from '@medlab/shared-types';
 import { AUTH_ONLY, IS_PUBLIC, PERMS } from './decorators';
 import { ConfigService } from '@nestjs/config';
 
+export function allowedRequestOrigins(cfg: ConfigService): string[] {
+  const allowed = String(cfg.getOrThrow('CORS_ORIGINS'))
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+  const deploymentHost = cfg.get<string>('VERCEL_URL');
+  if (cfg.get<string>('VERCEL_ENV') === 'preview' && deploymentHost) {
+    const previewUrl = new URL(`https://${deploymentHost}`);
+    if (previewUrl.hostname.endsWith('.vercel.app') && previewUrl.pathname === '/') {
+      allowed.push(previewUrl.origin);
+    }
+  }
+  return [...new Set(allowed)];
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) { super(); }
@@ -33,7 +48,7 @@ export class PermissionsGuard implements CanActivate {
 @Injectable()
 export class OriginGuard implements CanActivate {
   private readonly allowed: string[];
-  constructor(cfg: ConfigService) { this.allowed = String(cfg.get('CORS_ORIGINS')).split(',').map(s => s.trim()); }
+  constructor(cfg: ConfigService) { this.allowed = allowedRequestOrigins(cfg); }
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest();
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;

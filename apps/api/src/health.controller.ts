@@ -13,7 +13,7 @@ export class HealthController {
     try { await this.prisma.$queryRaw`SELECT 1`; } catch { out.database = 'down'; }
     try {
       const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 2000);
-      const r = await fetch(`${this.cfg.get('ML_SERVICE_URL')}/health`, { signal: ctl.signal }); clearTimeout(t);
+      const r = await fetch(new URL('health', `${this.cfg.getOrThrow('ML_SERVICE_URL').replace(/\/+$/, '')}/`), { signal: ctl.signal }); clearTimeout(t);
       out.mlService = r.ok ? 'ok' : 'down';
     } catch { out.mlService = 'down'; }
     if (out.database !== 'ok') throw new ServiceUnavailableException({ code: 'NOT_READY', message: 'Database unavailable', details: out });

@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/exception.filter';
+import { allowedRequestOrigins } from './common/guards';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
@@ -16,7 +17,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
   app.use(json({ limit: '100kb' }));
-  app.enableCors({ origin: String(cfg.get('CORS_ORIGINS')).split(',').map(s => s.trim()), credentials: true });
+  app.enableCors({ origin: allowedRequestOrigins(cfg), credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();
