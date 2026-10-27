@@ -1,6 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { Role } from '@prisma/client';
+import { Gender, Priority, RequestStatus, ResultType, Role } from '@prisma/client';
 import { createHash, randomBytes, randomUUID } from 'crypto';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
@@ -14,10 +14,14 @@ describe('Authentication and access control (database-backed)', () => {
   const password = 'TestUser!2026Password';
   const adminEmail = `admin-${randomUUID()}@medlab.local`;
   const scientistEmail = `scientist-${randomUUID()}@medlab.local`;
+  const clinicianEmail = `clinician-${randomUUID()}@medlab.local`;
   const inactiveEmail = `inactive-${randomUUID()}@medlab.local`;
   let app: INestApplication;
   let prisma: PrismaService;
   let ids: string[] = [];
+  let patientIds: string[] = [];
+  let requestIds: string[] = [];
+  let testId = '';
 
   const accessCookie = (res: request.Response) => {
     const cookie = (res.headers['set-cookie']?.split(/,(?=(?:access_token|refresh_token)=)/) ?? [])
@@ -46,12 +50,42 @@ describe('Authentication and access control (database-backed)', () => {
     const rows = await Promise.all([
       prisma.user.create({ data: { email: adminEmail, passwordHash, fullName: 'Test Admin', role: Role.ADMINISTRATOR } }),
       prisma.user.create({ data: { email: scientistEmail, passwordHash, fullName: 'Test Scientist', role: Role.LABORATORY_SCIENTIST } }),
+      prisma.user.create({ data: { email: clinicianEmail, passwordHash, fullName: 'Test Clinician', role: Role.CLINICIAN } }),
       prisma.user.create({ data: { email: inactiveEmail, passwordHash, fullName: 'Inactive Test User', role: Role.CLINICIAN, isActive: false } }),
     ]);
     ids = rows.map(row => row.id);
+    const patients = await Promise.all([
+      prisma.patient.create({ data: { patientNumber: `MLP-IT-${randomUUID()}`, firstName: 'Owner', lastName: 'Patient', gender: Gender.UNKNOWN, createdById: ids[0] } }),
+      prisma.patient.create({ data: { patientNumber: `MLP-IT-${randomUUID()}`, firstName: 'Other', lastName: 'Patient', gender: Gender.UNKNOWN, createdById: ids[0] } }),
+    ]);
+    patientIds = patients.map(patient => patient.id);
+    const requests = await Promise.all([
+      prisma.laboratoryRequest.create({ data: { requestNumber: `REQ-IT-${randomUUID()}`, patientId: patientIds[0], requestedById: ids[2], priority: Priority.ROUTINE, status: RequestStatus.PENDING } }),
+      prisma.laboratoryRequest.create({ data: { requestNumber: `REQ-IT-${randomUUID()}`, patientId: patientIds[1], requestedById: ids[1], priority: Priority.ROUTINE, status: RequestStatus.PENDING } }),
+    ]);
+    requestIds = requests.map(row => row.id);
+    const test = await prisma.laboratoryTest.create({
+      data: { code: `T${randomUUID().replace(/-/g, '').slice(0, 20)}`, name: 'Integration Test', category: 'Test', specimenType: 'Test tube', resultType: ResultType.NUMERIC },
+    });
+    testId = test.id;
   });
 
   afterAll(async () => {
+    if (requestIds?.length) {
+      const specimens = await prisma.specimen.findMany({ where: { requestId: { in: requestIds } }, select: { id: true } });
+      await prisma.auditLog.deleteMany({ where: { resourceId: { in: [...requestIds, ...patientIds, ...ids] } } });
+      await prisma.specimenStatusHistory.deleteMany({ where: { specimenId: { in: specimens.map(specimen => specimen.id) } } });
+      await prisma.laboratoryResult.deleteMany({ where: { requestItem: { requestId: { in: requestIds } } } });
+      await prisma.laboratoryRequestItem.deleteMany({ where: { requestId: { in: requestIds } } });
+      await prisma.specimen.deleteMany({ where: { requestId: { in: requestIds } } });
+      await prisma.report.deleteMany({ where: { requestId: { in: requestIds } } });
+      await prisma.laboratoryRequest.deleteMany({ where: { id: { in: requestIds } } });
+    }
+    if (patientIds?.length) await prisma.patient.deleteMany({ where: { id: { in: patientIds } } });
+    if (testId) {
+      await prisma.referenceRange.deleteMany({ where: { testId } });
+      await prisma.laboratoryTest.deleteMany({ where: { id: testId } });
+    }
     if (ids?.length) {
       await prisma.auditLog.deleteMany({ where: { OR: [{ actorId: { in: ids } }, { resourceId: { in: ids } }] } });
       await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
@@ -83,6 +117,33 @@ describe('Authentication and access control (database-backed)', () => {
       .post('/api/v1/auth/login').set('Origin', origin).send({ email: adminEmail, password }).expect(200);
     await request(app.getHttpServer())
       .get('/api/v1/users').set('Cookie', accessCookie(admin)).expect(200);
+  });
+
+  it('keeps clinician request history scoped to requests they created', async () => {
+    const clinician = await request(app.getHttpServer())
+      .post('/api/v1/auth/login').set('Origin', origin).send({ email: clinicianEmail, password }).expect(200);
+    await request(app.getHttpServer()).get('/api/v1/patients').set('Cookie', accessCookie(clinician)).expect(200);
+    await request(app.getHttpServer())
+      .get(`/api/v1/requests/${requestIds[0]}`).set('Cookie', accessCookie(clinician)).expect(200);
+    await request(app.getHttpServer())
+      .get(`/api/v1/requests/${requestIds[1]}`).set('Cookie', accessCookie(clinician)).expect(404);
+    await request(app.getHttpServer())
+      .get(`/api/v1/patients/${patientIds[1]}/history`).set('Cookie', accessCookie(clinician)).expect(404);
+  });
+
+  it('creates clinician-owned requests and rejects requests without an idempotency key', async () => {
+    const clinician = await request(app.getHttpServer())
+      .post('/api/v1/auth/login').set('Origin', origin).send({ email: clinicianEmail, password }).expect(200);
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/requests').set('Origin', origin).set('Cookie', accessCookie(clinician))
+      .set('Idempotency-Key', randomUUID())
+      .send({ patientId: patientIds[1], testIds: [testId] }).expect(201);
+    requestIds.push(created.body.id as string);
+    expect(created.body.items).toHaveLength(1);
+    expect(created.body.specimens).toHaveLength(1);
+    await request(app.getHttpServer())
+      .post('/api/v1/requests').set('Origin', origin).set('Cookie', accessCookie(clinician))
+      .send({ patientId: patientIds[1], testIds: [testId] }).expect(400);
   });
 
   it('rejects unsafe requests without an allowed Origin', async () => {

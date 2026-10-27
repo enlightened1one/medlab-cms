@@ -1,7 +1,7 @@
 # MedLab - Cloud-Based Medical Laboratory System (Random Forest decision support)
 
-> **STATUS: WORK IN PROGRESS.** Phases 1-3 are implemented; initial Prisma, build, seed, and API smoke
-> verification has now been run. Phases 4-8 remain incomplete. See "Verification status" for exact results.
+> **STATUS: WORK IN PROGRESS.** Phases 1-4 are implemented. Phase 4 has passed compilation and API startup
+> checks, but its database-backed workflow tests have not been run. Phases 5-8 remain incomplete.
 
 ## Architecture
 Browser -> Next.js (apps/web) -> NestJS REST `/api/v1` (apps/api) -> PostgreSQL (Prisma) and protected FastAPI ML service (apps/ml-service).
@@ -12,7 +12,7 @@ Single schema owner: `apps/api/prisma/schema.prisma`. Shared RBAC matrix: `packa
 |---|---|---|
 | 1-2 | Workspace, env template, Docker Postgres, Prisma schema, idempotent seed, guarded reset | Implemented; install, schema, migration, and seed verified |
 | 3 | Env validation, Argon2id, login/refresh rotation+reuse detection, lockout, password reset, deny-by-default RBAC, CSRF origin guard, admin user provisioning, audit service, exception filter, health/readiness | Implemented; build and API smoke flows verified |
-| 4 | Patients, test catalogue, requests, specimens, results/amendments, reports+PDF, dashboard, audit read API | **Not started** |
+| 4 | Patients, test catalogue, requests, specimens, results/amendments, reports+PDF, dashboard, audit read API | Implemented; compilation and API startup verified; database workflows unverified |
 | 5 | ML dataset, Random Forest training/eval, FastAPI service, NestJS integration | **Not started** |
 | 6 | Next.js pages | **Not started** |
 | 7-8 | Test suites, e2e, full docs | **Not started** |
@@ -28,7 +28,9 @@ Single schema owner: `apps/api/prisma/schema.prisma`. Shared RBAC matrix: `packa
 - PASS: API HTTP smoke checks: all five active demo accounts logged in; inactive account was rejected; `/auth/me`, admin and wrong-role access, missing-Origin rejection, refresh rotation/reuse revocation, logout, and password reset were exercised. The reset test used a directly inserted one-time test token. Demo credentials were restored by re-running the seed.
 - PASS: `GET /api/v1/health` returned `200 {"status":"ok"}`; `/health/ready` returned HTTP 200 with database `ok` and optional ML service `down`.
 - PASS: workspace `pnpm build` and `pnpm typecheck`, including the new Supertest suite, pass.
-- NOT RUN: database-backed Jest/Supertest suite is implemented but requires a separate `.env.test` database. It has not been run; do not point it at the application or production database.
+- PASS: Phase 4 API modules loaded at startup; `GET /api/v1/health` returned `{"status":"ok"}` and `/health/ready` returned `{"app":"ok","database":"ok","mlService":"down"}`.
+- PASS: shared RBAC tests now pass all 6 cases, including dashboard-read permissions.
+- NOT RUN: Phase 4 patient/request/specimen/result/report workflows and clinician IDOR cases are implemented as database-backed Jest/Supertest tests but require a separate `.env.test` database. They have not been run; do not point them at the application or production database.
 - NOT RUN: real email delivery/reset-link retrieval, expired/malformed JWT cases, rate-limit verification, complete security/e2e suites, `pnpm audit`, ML training, and frontend verification.
 
 ## Setup
@@ -61,6 +63,19 @@ pnpm test
 The Compose test database is isolated on `127.0.0.1:5433` with its own persistent volume. Never replace
 `.env.test` URLs with production or application database URLs.
 
+### Phase 4 workflow scope
+
+The API now provides patient archive/search/history, test catalogue and reference-range reads, idempotent laboratory
+request creation, specimen status history, version-checked result entry/validation/amendment, final report generation
+and amendment (PDF plus print HTML), date-filtered dashboard counts, and a paginated read-only administrator audit API.
+Report generation requires a final result for every request item; changing a validated result records a revision.
+No Prisma schema changes were needed for this phase, so it adds no migration.
+
+Clinicians can search the minimal active-patient directory (demographics only, no phone number) so they can place their
+first laboratory request. Their request, patient-history, specimen, result, and report access is restricted to requests
+they created. This directory visibility is broader than ownership-based visibility and is not yet validated by the
+database-backed integration suite.
+
 ## Demo credentials (PUBLICLY KNOWN - never deploy with these)
 | Role | Email | Password |
 |---|---|---|
@@ -80,10 +95,6 @@ role re-read from DB each request; whitelist-only DTOs; passwordHash never selec
 last-admin and self-demotion protections; administrators lack result entry/validation/amendment permissions.
 
 ## Known gaps / blockers
-- No migration SQL yet (needs a live PostgreSQL to generate).
-- No lockfile (needs network).
 - Dataset for the ML phase must be supplied or downloaded; otherwise a clearly labelled synthetic set will be used.
+- Phase 4 workflow correctness and authorization still require execution against the isolated `.env.test` database.
 - Nigerian data-protection (NDPA 2023) and clinical governance review is still required before any real deployment.
-
-
-<!-- pnpm --filter @medlab/api prisma:migrate:dev --name init -->

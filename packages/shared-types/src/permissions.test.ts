@@ -17,6 +17,10 @@ test('only administrators manage users and read audit logs', () => {
   }
   assert.equal(hasPermission('ADMINISTRATOR', 'users:manage'), true);
 });
+test('all authenticated roles can use role-scoped dashboard statistics', () => {
+  for (const role of ['ADMINISTRATOR', 'LABORATORY_SCIENTIST', 'CLINICIAN'] as Role[])
+    assert.equal(hasPermission(role, 'stats:read'), true);
+});
 test('clinicians cannot touch specimens or validate results', () => {
   assert.equal(hasPermission('CLINICIAN', 'specimens:write'), false);
   assert.equal(hasPermission('CLINICIAN', 'results:validate'), false);
