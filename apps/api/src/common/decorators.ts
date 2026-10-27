@@ -9,5 +9,5 @@ export const AUTH_ONLY = 'authenticatedOnly';
 export const AuthenticatedOnly = () => SetMetadata(AUTH_ONLY, true);
 export const RequirePermissions = (...p: Permission[]) => SetMetadata(PERMS, p);
 
-export interface AuthUser { id: string; email: string; role: Role }
+export interface AuthUser { id: string; email: string; fullName: string; role: Role }
 export const CurrentUser = createParamDecorator((_d, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest().user);

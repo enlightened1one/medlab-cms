@@ -101,7 +101,8 @@ describe('Authentication and access control (database-backed)', () => {
     expect(login.status).toBe(200);
     expect(login.body.user.email).toBe(adminEmail);
     expect(JSON.stringify(login.body)).not.toContain('accessToken');
-    await request(app.getHttpServer()).get('/api/v1/auth/me').set('Cookie', accessCookie(login)).expect(200);
+    const currentUser = await request(app.getHttpServer()).get('/api/v1/auth/me').set('Cookie', accessCookie(login)).expect(200);
+    expect(currentUser.body.user).toMatchObject({ email: adminEmail, fullName: 'Test Admin', role: 'ADMINISTRATOR' });
 
     await request(app.getHttpServer())
       .post('/api/v1/auth/login').set('Origin', origin).send({ email: inactiveEmail, password }).expect(401);

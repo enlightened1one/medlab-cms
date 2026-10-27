@@ -15,8 +15,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
   /** Role is re-read from the database on every request, so deactivation and role changes apply immediately. */
   async validate(payload: { sub: string }): Promise<AuthUser> {
-    const u = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, email: true, role: true, isActive: true } });
+    const u = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, email: true, fullName: true, role: true, isActive: true } });
     if (!u || !u.isActive) throw new UnauthorizedException({ code: 'ACCOUNT_INACTIVE', message: 'Session is no longer valid' });
-    return { id: u.id, email: u.email, role: u.role };
+    return { id: u.id, email: u.email, fullName: u.fullName, role: u.role };
   }
 }

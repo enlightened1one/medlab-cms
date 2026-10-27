@@ -46,6 +46,8 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
     () => user ? navigation.filter(item => can(user, item.permission)) : [],
     [user],
   );
+  const displayName = user?.fullName?.trim() || user?.email || 'User';
+  const initials = displayName.split(/\s+/).map(part => part[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
 
   async function signOut() {
     try {
@@ -75,9 +77,9 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         </nav>
         <div className="sidebar-bottom">
           <div className="privacy-chip"><span className="privacy-icon">⌑</span><span><strong>Private by design</strong><small>Access is role restricted</small></span></div>
-          <button className="user-card" onClick={signOut} aria-label={`Sign out ${user.fullName}`}>
-            <span className="avatar">{user.fullName.split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</span>
-            <span className="user-meta"><strong>{user.fullName}</strong><small>{roleLabel[user.role]}</small></span>
+          <button className="user-card" onClick={signOut} aria-label={`Sign out ${displayName}`}>
+            <span className="avatar">{initials}</span>
+            <span className="user-meta"><strong>{displayName}</strong><small>{roleLabel[user.role]}</small></span>
             <span className="signout-icon" aria-hidden="true">↗</span>
           </button>
         </div>
