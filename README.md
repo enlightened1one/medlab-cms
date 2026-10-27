@@ -155,10 +155,11 @@ and an internal FastAPI ML service. The API declares a service binding to `ml-se
 `ML_SERVICE_URL` at runtime. Do not manually define `ML_SERVICE_URL` in Vercel. The browser uses the same-origin
 `/api/v1` path in production, which routes through the API rewrite; do not set `NEXT_PUBLIC_API_BASE_URL` to an
 internal service binding URL. The API and web services each use a frozen, filtered pnpm workspace install so
-their runtime and shared workspace dependencies are present in their deployment bundles. The API's Vercel build
-explicitly generates Prisma Client from `prisma/schema.prisma` before compiling Nest; its `prebuild` script does
-the same for package builds. The Nest production build includes only runtime source under `src/`, excluding CLI
-seed, database scripts, and tests.
+their runtime and shared workspace dependencies are present in their deployment bundles. The API uses pnpm's
+hoisted node linker so runtime dependencies are resolvable from Vercel's serverless function root. The API's
+Vercel build explicitly generates Prisma Client from `prisma/schema.prisma` before compiling Nest; its
+`prebuild` script does the same for package builds. The Nest production build includes only runtime source under
+`src/`, excluding CLI seed, database scripts, and tests.
 
 Configure these Vercel environment variables for the API and ML service as applicable: `DATABASE_URL`,
 `DIRECT_URL`, `JWT_ACCESS_SECRET`, `ML_SERVICE_TOKEN`, `FRONTEND_URL`, and `CORS_ORIGINS`. `DATABASE_URL`,
