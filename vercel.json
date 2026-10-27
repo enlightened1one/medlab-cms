@@ -5,7 +5,7 @@
       "root": "apps/api",
       "framework": "nestjs",
       "installCommand": "pnpm install --frozen-lockfile --filter @medlab/api...",
-      "buildCommand": "pnpm --filter @medlab/api exec prisma generate && pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/api build",
+      "buildCommand": "pnpm exec prisma generate --schema prisma/schema.prisma && pnpm --filter @medlab/shared-types build && pnpm exec nest build",
       "bindings": [
         {
           "type": "service",

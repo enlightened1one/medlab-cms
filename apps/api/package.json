@@ -14,6 +14,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "ts-node scripts/db-reset.ts",
     "test:db:prepare": "dotenv -e ../../.env.test -- ts-node scripts/check-test-db.ts && dotenv -e ../../.env.test -- prisma migrate deploy",
+    "prebuild": "prisma generate --schema prisma/schema.prisma",
     "typecheck": "tsc --noEmit",
     "build": "nest build",
     "start": "nest start",
