@@ -34,8 +34,8 @@ Single schema owner: `apps/api/prisma/schema.prisma`. Shared RBAC matrix: `packa
 - PASS: `pnpm ml:test` (6 tests covering deterministic labels, health, metadata, authentication, strict schema, and body-size limits), plus live HTTP checks for health, model-info, rejected unauthenticated prediction, and a bearer-authenticated prediction.
 - PASS: `pnpm typecheck` and `pnpm build` after adding the NestJS predictions module.
 - PASS: `pnpm --filter @medlab/web typecheck`, `pnpm --filter @medlab/web build`, and `pnpm --filter @medlab/web test` (3 API client tests).
-- FAIL: Production deployment `579d5eb` reached Vercel `Ready`, but API `GET /api/v1/health`, `GET /api/v1/auth/me`, and `POST /api/v1/auth/login` returned `FUNCTION_INVOCATION_FAILED`; runtime logs reported `Cannot find module 'reflect-metadata'`. A source change now explicitly includes that package in the API function trace; it is not deployed or runtime-verified yet.
-- PARTIAL: Local `vercel build --project medlab-cms --scope alpha-xvis-projects --prod --yes` completed the API build and showed `reflect-metadata` in the API function file map; the overall build then failed on Windows with `EPERM` while creating a Next.js function symlink.
+- FAIL: Production deployment `579d5eb` reached Vercel `Ready`, but API `GET /api/v1/health`, `GET /api/v1/auth/me`, and `POST /api/v1/auth/login` returned `FUNCTION_INVOCATION_FAILED`; runtime logs reported `Cannot find module 'reflect-metadata'`. A follow-up deployment with that package explicitly traced advanced startup to `Cannot find module '@nestjs/core'`; the API still returned 500.
+- PARTIAL: Local `vercel build --project medlab-cms --scope alpha-xvis-projects --prod --yes` completed the API build and showed `reflect-metadata` in the API function file map; the overall build then failed on Windows with `EPERM` while creating a Next.js function symlink. A later local rerun stopped during pnpm's hoisted install with `ERR_PNPM_ENOENT` for a temporary `@types/serve-static` directory.
 - NOT RUN: Phase 4 patient/request/specimen/result/report workflows and clinician IDOR cases are implemented as database-backed Jest/Supertest tests but require a separate `.env.test` database. They have not been run; do not point them at the application or production database.
 - NOT RUN: live browser login/workflow against an authenticated API, Phase 4/5 database-backed integration, real email delivery/reset-link retrieval, expired/malformed JWT cases, rate-limit verification, complete security/e2e suites, `pnpm audit`, and frontend e2e/accessibility verification.
 
@@ -157,9 +157,9 @@ and an internal FastAPI ML service. The API declares a service binding to `ml-se
 `ML_SERVICE_URL` at runtime. Do not manually define `ML_SERVICE_URL` in Vercel. The browser uses the same-origin
 `/api/v1` path in production, which routes through the API rewrite; do not set `NEXT_PUBLIC_API_BASE_URL` to an
 internal service binding URL. The API and web services each use a frozen, filtered pnpm workspace install. The API's
-hoisted pnpm linker alone did not prevent the production runtime from omitting `reflect-metadata`; the API function
-explicitly includes `reflect-metadata` in its traced files because the Vercel runtime previously omitted it despite
-it being a declared API dependency; this packaging workaround still requires runtime verification after deployment.
+hoisted pnpm linker alone did not prevent the production runtime from omitting declared dependencies; the API
+function now explicitly includes its service `node_modules` tree in the function trace. This packaging workaround
+still requires runtime verification after deployment.
 The API's Vercel build explicitly generates Prisma Client from `prisma/schema.prisma` before compiling Nest; its
 `prebuild` script does the same for package builds. The Nest production build includes only runtime source under
 `src/`, excluding CLI seed, database scripts, and tests.
