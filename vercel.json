@@ -23,6 +23,7 @@
     "web": {
       "root": "apps/web",
       "framework": "nextjs",
+      "installCommand": "pnpm install --frozen-lockfile --filter @medlab/web...",
       "buildCommand": "pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/web build"
     }
   },

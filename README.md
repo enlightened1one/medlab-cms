@@ -154,8 +154,8 @@ The root `vercel.json` defines three services: the public Next.js web app (`/`),
 and an internal FastAPI ML service. The API declares a service binding to `ml-service`; Vercel injects its URL as
 `ML_SERVICE_URL` at runtime. Do not manually define `ML_SERVICE_URL` in Vercel. The browser uses the same-origin
 `/api/v1` path in production, which routes through the API rewrite; do not set `NEXT_PUBLIC_API_BASE_URL` to an
-internal service binding URL. The API service uses a frozen, filtered pnpm workspace install so its runtime and
-shared workspace dependencies are present in its deployment bundle.
+internal service binding URL. The API and web services each use a frozen, filtered pnpm workspace install so
+their runtime and shared workspace dependencies are present in their deployment bundles.
 
 Configure these Vercel environment variables for the API and ML service as applicable: `DATABASE_URL`,
 `DIRECT_URL`, `JWT_ACCESS_SECRET`, `ML_SERVICE_TOKEN`, `FRONTEND_URL`, and `CORS_ORIGINS`. `DATABASE_URL`,
