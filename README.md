@@ -1,7 +1,7 @@
 # MedLab - Cloud-Based Medical Laboratory System (Random Forest decision support)
 
-> **STATUS: WORK IN PROGRESS.** Phases 1-5 are implemented. Phase 4 database-backed workflow tests and
-> Phase 5 model/service verification status are recorded below. Phases 6-8 remain incomplete.
+> **STATUS: WORK IN PROGRESS.** Phases 1-6 are implemented. Phase 4 workflow and selected integration tests,
+> plus Phase 5/6 verification, are recorded below. Phase 7-8 remain incomplete.
 
 ## Architecture
 Browser -> Next.js (apps/web) -> NestJS REST `/api/v1` (apps/api) -> PostgreSQL (Prisma) and protected FastAPI ML service (apps/ml-service).
@@ -14,7 +14,7 @@ Single schema owner: `apps/api/prisma/schema.prisma`. Shared RBAC matrix: `packa
 | 3 | Env validation, Argon2id, login/refresh rotation+reuse detection, lockout, password reset, deny-by-default RBAC, CSRF origin guard, admin user provisioning, audit service, exception filter, health/readiness | Implemented; build and API smoke flows verified |
 | 4 | Patients, test catalogue, requests, specimens, results/amendments, reports+PDF, dashboard, audit read API | Implemented; compilation and API startup verified; database workflows unverified |
 | 5 | ML dataset, Random Forest training/eval, FastAPI service, NestJS integration | Implemented as a synthetic educational prototype; tests/metrics below |
-| 6 | Next.js pages | **Not started** |
+| 6 | Next.js pages | Implemented; production build and API client tests verified |
 | 7-8 | Test suites, e2e, full docs | **Not started** |
 
 ## Verification status (actually executed)
@@ -33,8 +33,9 @@ Single schema owner: `apps/api/prisma/schema.prisma`. Shared RBAC matrix: `packa
 - PASS: `pnpm ml:train` generated the 5,000-row synthetic dataset and versioned Random Forest pipeline; held-out 20% metrics were accuracy 1.000, macro precision 1.000, macro recall 1.000, and macro F1 1.000. Five-fold stratified training-partition CV accuracy and macro F1 were both 1.000 (standard deviation 0.000).
 - PASS: `pnpm ml:test` (6 tests covering deterministic labels, health, metadata, authentication, strict schema, and body-size limits), plus live HTTP checks for health, model-info, rejected unauthenticated prediction, and a bearer-authenticated prediction.
 - PASS: `pnpm typecheck` and `pnpm build` after adding the NestJS predictions module.
+- PASS: `pnpm --filter @medlab/web typecheck`, `pnpm --filter @medlab/web build`, and `pnpm --filter @medlab/web test` (3 API client tests).
 - NOT RUN: Phase 4 patient/request/specimen/result/report workflows and clinician IDOR cases are implemented as database-backed Jest/Supertest tests but require a separate `.env.test` database. They have not been run; do not point them at the application or production database.
-- NOT RUN: real email delivery/reset-link retrieval, expired/malformed JWT cases, rate-limit verification, complete security/e2e suites, `pnpm audit`, database-backed prediction persistence, and frontend verification.
+- NOT RUN: live browser login/workflow against an authenticated API, Phase 4/5 database-backed integration, real email delivery/reset-link retrieval, expired/malformed JWT cases, rate-limit verification, complete security/e2e suites, `pnpm audit`, and frontend e2e/accessibility verification.
 
 ## Setup
 ```bash
@@ -116,6 +117,37 @@ feature metadata to the adjacent JSON, and the labelled synthetic CSV to `apps/m
 metrics are from a stratified 20% test partition; 5-fold stratified cross-validation runs on the training partition
 with preprocessing inside the pipeline. Persisted artifacts are required before the service starts.
 
+### Phase 6 frontend
+
+The Next.js App Router frontend is in `apps/web`. It includes login, password recovery/reset, a responsive role-filtered
+workspace, dashboard date filters, patient directory and history, request creation/review, specimen transitions,
+result entry/submission/validation/amendment, final reports and PDF/print, catalogue/reference-range management,
+educational predictions, administrator user management, and read-only audit logs.
+
+The browser uses `HttpOnly` cookies with `credentials: include`; access and refresh tokens are never put in browser
+storage. Session refresh is attempted once after an authenticated API request returns 401. Unsafe request calls rely
+on the API's configured `CORS_ORIGINS` Origin allow-list. The shared RBAC permission matrix controls navigation and
+visible actions; server-side authorization remains authoritative. Clinician history and request details stay
+ownership-scoped. The prediction interface prominently labels the prototype as synthetic and non-clinical.
+
+For local development, set `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api/v1` in the root `.env`, ensure that
+`CORS_ORIGINS` contains `http://localhost:3000`, start the API with `pnpm dev`, then in another terminal run:
+
+```powershell
+pnpm --filter @medlab/web dev
+```
+
+The web app is served at `http://localhost:3000`. To build and test it:
+
+```powershell
+pnpm --filter @medlab/web typecheck
+pnpm --filter @medlab/web test
+pnpm --filter @medlab/web build
+```
+
+The frontend has not been validated against authenticated server data or a production deployment. Do not claim
+browser-level workflow, accessibility, or end-to-end verification until those suites have been run.
+
 ## Demo credentials (PUBLICLY KNOWN - never deploy with these)
 | Role | Email | Password |
 |---|---|---|
@@ -138,4 +170,5 @@ last-admin and self-demotion protections; administrators lack result entry/valid
 ## Known gaps / blockers
 - Phase 5 metrics only measure recovery of deterministic synthetic rules; they provide no clinical evidence.
 - Phase 4 workflow correctness and authorization still require execution against the isolated `.env.test` database.
+- Phase 6 screens need authenticated API/browser workflow and accessibility verification.
 - Nigerian data-protection (NDPA 2023) and clinical governance review is still required before any real deployment.
