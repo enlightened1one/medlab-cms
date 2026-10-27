@@ -1,0 +1,20 @@
+{
+  "name": "medlab",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "db:generate": "pnpm --filter @medlab/api prisma:generate",
+    "db:migrate:init": "pnpm --filter @medlab/api prisma:migrate:dev --name init",
+    "db:migrate": "pnpm --filter @medlab/api prisma:migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @medlab/api prisma:migrate:dev",
+    "db:seed": "pnpm --filter @medlab/api db:seed",
+    "db:reset": "pnpm --filter @medlab/api db:reset",
+    "test:db:prepare": "pnpm --filter @medlab/api test:db:prepare",
+    "dev": "pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/api start:dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}

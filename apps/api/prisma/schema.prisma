@@ -1,0 +1,372 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMINISTRATOR
+  LABORATORY_SCIENTIST
+  CLINICIAN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum Priority {
+  ROUTINE
+  URGENT
+  STAT
+}
+
+enum RequestStatus {
+  PENDING
+  SPECIMEN_COLLECTED
+  IN_PROGRESS
+  AWAITING_VALIDATION
+  COMPLETED
+  CANCELLED
+}
+
+enum SpecimenStatus {
+  REGISTERED
+  COLLECTED
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  REJECTED
+  CANCELLED
+}
+
+enum ResultType {
+  NUMERIC
+  TEXT
+}
+
+enum ResultStatus {
+  DRAFT
+  SUBMITTED
+  VALIDATED
+  AMENDED
+}
+
+enum ResultFlag {
+  NORMAL
+  LOW
+  HIGH
+  CRITICAL_LOW
+  CRITICAL_HIGH
+  ABNORMAL
+}
+
+enum ReportStatus {
+  FINAL
+  AMENDED
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  fullName         String
+  role             Role
+  isActive         Boolean   @default(true)
+  isDemo           Boolean   @default(false)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  refreshTokens        RefreshToken[]
+  passwordResetTokens  PasswordResetToken[]
+  patientsCreated      Patient[]            @relation("PatientCreatedBy")
+  requestsMade         LaboratoryRequest[]  @relation("RequestedBy")
+  specimenChanges      SpecimenStatusHistory[]
+  resultsEntered       LaboratoryResult[]   @relation("ResultEnteredBy")
+  resultsValidated     LaboratoryResult[]   @relation("ResultValidatedBy")
+  revisions            ResultRevision[]
+  reportsGenerated     Report[]
+  predictions          Prediction[]
+  auditLogs            AuditLog[]
+
+  @@index([role, isActive])
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String
+  tokenHash    String    @unique   // SHA-256 of the opaque token; the token itself is never stored
+  familyId     String             // rotation family; reuse of a revoked token revokes the whole family
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+}
+
+model Patient {
+  id            String    @id @default(uuid())
+  patientNumber String    @unique            // e.g. MLP-000001, system-generated
+  // Dedup strategy: SHA-256 of normalised(lastName|firstName|dateOfBirth|phone) when DOB and phone are known.
+  // Names alone are never used as identity. Nullable because DOB/phone may be unavailable.
+  identityKey   String?   @unique
+  firstName     String
+  lastName      String
+  gender        Gender    @default(UNKNOWN)
+  dateOfBirth   DateTime? @db.Date
+  phone         String?
+  isDemo        Boolean   @default(false)
+  archivedAt    DateTime?
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     User      @relation("PatientCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  requests    LaboratoryRequest[]
+  specimens   Specimen[]
+  predictions Prediction[]
+
+  @@index([lastName, firstName])
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model LaboratoryTest {
+  id           String     @id @default(uuid())
+  code         String     @unique
+  name         String
+  category     String
+  specimenType String
+  unit         String?
+  resultType   ResultType @default(NUMERIC)
+  decimalPlaces Int       @default(1)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  referenceRanges ReferenceRange[]
+  requestItems    LaboratoryRequestItem[]
+
+  @@index([category, isActive])
+}
+
+// Ranges are configuration, vary by sex/age/method/institution, and are NOT universal standards.
+model ReferenceRange {
+  id            String   @id @default(uuid())
+  testId        String
+  sex           Gender?  // null = applies to any sex
+  ageMinYears   Int?
+  ageMaxYears   Int?
+  lowValue      Decimal? @db.Decimal(18, 6)
+  highValue     Decimal? @db.Decimal(18, 6)
+  criticalLow   Decimal? @db.Decimal(18, 6)
+  criticalHigh  Decimal? @db.Decimal(18, 6)
+  textRange     String?  // for qualitative tests, e.g. "Negative"
+  note          String?
+  test          LaboratoryTest @relation(fields: [testId], references: [id], onDelete: Restrict)
+
+  @@index([testId])
+}
+
+model LaboratoryRequest {
+  id             String        @id @default(uuid())
+  requestNumber  String        @unique
+  idempotencyKey String?       @unique   // blocks duplicate form submissions
+  patientId      String
+  requestedById  String
+  priority       Priority      @default(ROUTINE)
+  status         RequestStatus @default(PENDING)
+  clinicalNotes  String?
+  requestDate    DateTime      @default(now())
+  version        Int           @default(0)   // optimistic concurrency control
+  isDemo         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  requestedBy    User          @relation("RequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  items     LaboratoryRequestItem[]
+  specimens Specimen[]
+  report    Report?
+  predictions Prediction[]
+
+  @@index([patientId, requestDate])
+  @@index([status, requestDate])
+  @@index([requestedById])
+}
+
+model LaboratoryRequestItem {
+  id        String @id @default(uuid())
+  requestId String
+  testId    String
+  request   LaboratoryRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  test      LaboratoryTest    @relation(fields: [testId], references: [id], onDelete: Restrict)
+  result    LaboratoryResult?
+
+  @@unique([requestId, testId])
+  @@index([testId])
+}
+
+model Specimen {
+  id              String         @id @default(uuid())
+  specimenNumber  String         @unique
+  requestId       String
+  patientId       String
+  specimenType    String
+  status          SpecimenStatus @default(REGISTERED)
+  collectedAt     DateTime?
+  receivedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  version         Int            @default(0)
+  isDemo          Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  request         LaboratoryRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  patient         Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  history SpecimenStatusHistory[]
+  results LaboratoryResult[]
+
+  @@index([requestId])
+  @@index([patientId])
+  @@index([status, createdAt])
+}
+
+model SpecimenStatusHistory {
+  id          String          @id @default(uuid())
+  specimenId  String
+  fromStatus  SpecimenStatus?
+  toStatus    SpecimenStatus
+  changedById String
+  note        String?
+  createdAt   DateTime        @default(now())
+  specimen    Specimen        @relation(fields: [specimenId], references: [id], onDelete: Restrict)
+  changedBy   User            @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([specimenId, createdAt])
+}
+
+model LaboratoryResult {
+  id            String       @id @default(uuid())
+  requestItemId String       @unique
+  specimenId    String?
+  numericValue  Decimal?     @db.Decimal(18, 6)
+  textValue     String?
+  unit          String?
+  // Snapshot of the range used at entry time, so later config changes never rewrite history.
+  refLow        Decimal?     @db.Decimal(18, 6)
+  refHigh       Decimal?     @db.Decimal(18, 6)
+  refText       String?
+  flag          ResultFlag?
+  status        ResultStatus @default(DRAFT)
+  comment       String?
+  enteredById   String
+  validatedById String?
+  enteredAt     DateTime     @default(now())
+  validatedAt   DateTime?
+  version       Int          @default(0)
+  updatedAt     DateTime     @updatedAt
+  requestItem   LaboratoryRequestItem @relation(fields: [requestItemId], references: [id], onDelete: Restrict)
+  specimen      Specimen?    @relation(fields: [specimenId], references: [id], onDelete: Restrict)
+  enteredBy     User         @relation("ResultEnteredBy", fields: [enteredById], references: [id], onDelete: Restrict)
+  validatedBy   User?        @relation("ResultValidatedBy", fields: [validatedById], references: [id], onDelete: Restrict)
+
+  revisions ResultRevision[]
+
+  @@index([status])
+  @@index([specimenId])
+}
+
+model ResultRevision {
+  id             String   @id @default(uuid())
+  resultId       String
+  revisionNumber Int
+  snapshot       Json     // full prior state of the result
+  reason         String
+  changedById    String
+  createdAt      DateTime @default(now())
+  result         LaboratoryResult @relation(fields: [resultId], references: [id], onDelete: Restrict)
+  changedBy      User             @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@unique([resultId, revisionNumber])
+}
+
+model Report {
+  id            String       @id @default(uuid())
+  reportNumber  String       @unique
+  requestId     String       @unique
+  status        ReportStatus @default(FINAL)
+  generatedById String
+  issuedAt      DateTime     @default(now())
+  version       Int          @default(1)
+  isDemo        Boolean      @default(false)
+  request       LaboratoryRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  generatedBy   User             @relation(fields: [generatedById], references: [id], onDelete: Restrict)
+
+  @@index([issuedAt])
+}
+
+model Prediction {
+  id             String   @id @default(uuid())
+  patientId      String
+  requestId      String?
+  requestedById  String
+  modelVersion   String
+  features       Json     // controlled snapshot of inputs only
+  predictedClass String
+  createdAt      DateTime @default(now())
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  request        LaboratoryRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  requestedBy    User     @relation(fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([patientId, createdAt])
+}
+
+model AuditLog {
+  id            String       @id @default(uuid())
+  actorId       String?
+  action        String
+  resourceType  String
+  resourceId    String?
+  outcome       AuditOutcome
+  correlationId String?
+  metadata      Json?        // never passwords, tokens, or unnecessary clinical data
+  isDemo        Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  actor         User?        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
