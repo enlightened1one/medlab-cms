@@ -5,7 +5,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService, Tokens } from './auth.service';
 import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './auth.dto';
-import { AuthUser, AuthenticatedOnly, CurrentUser, Public } from '../common/decorators';
+import { type AuthUser, AuthenticatedOnly, CurrentUser, Public } from '../common/decorators';
 
 @ApiTags('auth') @Controller('auth')
 export class AuthController {

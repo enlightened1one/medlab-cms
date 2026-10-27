@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma, Role } from '@prisma/client';
 import { z } from 'zod';
 import { AuditService } from '../audit/audit.service';
-import { AuthUser } from '../common/decorators';
+import type { AuthUser } from '../common/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePredictionDto, PredictionsQueryDto } from './predictions.dto';
 

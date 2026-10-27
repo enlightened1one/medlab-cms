@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
+import { type AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
 import { UsersService } from './users.service';
 import { CreateUserDto, SetActiveDto, UpdateRoleDto } from './users.dto';
 

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RequestStatus, ResultFlag, ResultStatus, ResultType, Role, SpecimenStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { AuthUser } from '../common/decorators';
+import type { AuthUser } from '../common/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 import { AmendResultDto, EnterResultDto } from './results.dto';
 

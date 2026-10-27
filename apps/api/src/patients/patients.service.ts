@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { createHash } from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { AuthUser } from '../common/decorators';
+import type { AuthUser } from '../common/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePatientDto, UpdatePatientDto } from './patients.dto';
 

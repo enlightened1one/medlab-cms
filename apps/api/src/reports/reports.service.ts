@@ -4,7 +4,7 @@ import * as pdfMake from 'pdfmake';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { resolve, dirname } from 'path';
 import { AuditService } from '../audit/audit.service';
-import { AuthUser } from '../common/decorators';
+import type { AuthUser } from '../common/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PAGE = (page?: number, pageSize?: number) => {

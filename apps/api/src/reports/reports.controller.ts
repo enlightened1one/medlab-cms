@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Post, Query, Req, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
+import { type AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
 import { PaginationDto } from '../common/pagination.dto';
 import { GenerateReportDto } from './reports.dto';
 import { ReportsService } from './reports.service';

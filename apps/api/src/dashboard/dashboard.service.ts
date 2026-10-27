@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, ResultStatus, Role } from '@prisma/client';
-import { AuthUser } from '../common/decorators';
+import type { AuthUser } from '../common/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()

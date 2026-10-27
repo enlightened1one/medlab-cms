@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
+import { type AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
 import { CreateReferenceRangeDto, CreateTestDto, UpdateTestDto } from './tests.dto';
 import { TestsService } from './tests.service';
 

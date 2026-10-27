@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
+import { type AuthUser, CurrentUser, RequirePermissions } from '../common/decorators';
 import { CreatePredictionDto, PredictionsQueryDto } from './predictions.dto';
 import { PredictionsService } from './predictions.service';
 
