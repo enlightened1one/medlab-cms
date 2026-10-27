@@ -154,7 +154,8 @@ The root `vercel.json` defines three services: the public Next.js web app (`/`),
 and an internal FastAPI ML service. The API declares a service binding to `ml-service`; Vercel injects its URL as
 `ML_SERVICE_URL` at runtime. Do not manually define `ML_SERVICE_URL` in Vercel. The browser uses the same-origin
 `/api/v1` path in production, which routes through the API rewrite; do not set `NEXT_PUBLIC_API_BASE_URL` to an
-internal service binding URL.
+internal service binding URL. The API service uses a frozen, filtered pnpm workspace install so its runtime and
+shared workspace dependencies are present in its deployment bundle.
 
 Configure these Vercel environment variables for the API and ML service as applicable: `DATABASE_URL`,
 `DIRECT_URL`, `JWT_ACCESS_SECRET`, `ML_SERVICE_TOKEN`, `FRONTEND_URL`, and `CORS_ORIGINS`. `DATABASE_URL`,
@@ -165,6 +166,8 @@ web origin and include that origin in `CORS_ORIGINS`. In Vercel preview deployme
 only the matching `VERCEL_URL` hostname when `VERCEL_ENV=preview` and that hostname ends in `.vercel.app`; arbitrary
 origins and non-Vercel preview hosts are not allowed automatically. Configure SMTP values if password-reset email
 delivery is required. Never use demo credentials or placeholder secrets in deployment.
+Do not set `NODE_ENV=development` in Vercel; let Vercel select `production` for production deployments and its
+appropriate value for previews.
 
 Apply committed migrations from a trusted deployment environment with `pnpm db:migrate`; deployments do not
 automatically migrate the database or seed demo data. The ML model artifact and metadata must be present in the
