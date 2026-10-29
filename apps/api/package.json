@@ -12,6 +12,7 @@
     "prisma:migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
     "prisma:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:create-admin": "ts-node scripts/create-admin.ts",
     "db:reset": "ts-node scripts/db-reset.ts",
     "test:db:prepare": "dotenv -e ../../.env.test -- ts-node scripts/check-test-db.ts && dotenv -e ../../.env.test -- prisma migrate deploy",
     "prebuild": "prisma generate --schema prisma/schema.prisma",
