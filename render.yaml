@@ -3,8 +3,8 @@ services:
     name: medlab-api
     runtime: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/api build
-    startCommand: pnpm --filter @medlab/api exec prisma migrate deploy --schema prisma/schema.prisma && node apps/api/dist/main.js
+    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/api build
+    startCommand: npx pnpm@9.12.0 --filter @medlab/api exec prisma migrate deploy --schema prisma/schema.prisma && node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
@@ -26,7 +26,7 @@ services:
       - key: ML_SERVICE_URL
         value: https://medlab-ml.onrender.com
       - key: ML_SERVICE_TOKEN
-        generateValue: true
+        sync: false
       - key: ML_TIMEOUT_MS
         value: 5000
       - key: SMTP_HOST
@@ -48,15 +48,20 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+    envVars:
+      - key: ML_SERVICE_TOKEN
+        sync: false
 
   - type: web
     name: medlab-web
     runtime: node
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/web build
-    startCommand: pnpm --filter @medlab/web start -- -H 0.0.0.0 -p $PORT
+    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/web build
+    startCommand: npx pnpm@9.12.0 --filter @medlab/web start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_ENV
         value: production
       - key: API_BASE_URL
-        value: https://medlab-api.onrender.com
+        value: https://medlab-api.onrender.com/api/v1
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://medlab-api.onrender.com/api/v1
