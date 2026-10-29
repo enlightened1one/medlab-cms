@@ -57,7 +57,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npx pnpm@9.12.0 install --frozen-lockfile --prod=false && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/web build
-    startCommand: npx pnpm@9.12.0 --filter @medlab/web start -- -H 0.0.0.0 -p $PORT
+    startCommand: npx pnpm@9.12.0 --filter @medlab/web exec next start -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_ENV
         value: production
