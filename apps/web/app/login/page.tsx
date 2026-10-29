@@ -16,7 +16,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await apiFetch<{ user: User }>('/auth/login', { method: 'POST', body: { email, password } });
+      await apiFetch<{ user: User }>('/auth/login', { method: 'POST', body: { username: email, password } });
       window.location.assign('/dashboard');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to sign in. Try again.');
