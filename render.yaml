@@ -22,7 +22,7 @@ services:
       - key: FRONTEND_URL
         value: https://medlab-web-ieti.onrender.com
       - key: CORS_ORIGINS
-        value: https://medlab-web-ieti.onrender.com
+        value: https://medlab-web-ieti.onrender.com,https://medlab-web.onrender.com
       - key: ML_SERVICE_URL
         value: https://medlab-ml.onrender.com
       - key: ML_SERVICE_TOKEN
@@ -62,4 +62,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: API_BASE_URL
-        value: https://medlab-api.onrender.com
+        value: https://medlab-api.onrender.com/api/v1
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://medlab-api.onrender.com/api/v1
