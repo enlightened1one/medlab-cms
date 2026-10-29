@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-const apiBaseUrl = process.env.API_BASE_URL?.replace(/\/+$/, '');
+const apiBaseUrl = process.env.API_BASE_URL?.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
 const nextConfig: NextConfig = {
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
