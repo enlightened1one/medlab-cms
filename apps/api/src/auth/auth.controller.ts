@@ -21,7 +21,9 @@ export class AuthController {
 
   @Public() @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const { tokens, user } = await this.auth.login(dto.email, dto.password, this.cid(req)); this.setCookies(res, tokens); return { user };
+    const identifier = dto.email ?? dto.username;
+    if (!identifier) throw new Error('Email or username is required');
+    const { tokens, user } = await this.auth.login(identifier, dto.password, this.cid(req)); this.setCookies(res, tokens); return { user };
   }
   @Public() @Throttle({ default: { limit: 30, ttl: 60_000 } }) @HttpCode(200) @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
