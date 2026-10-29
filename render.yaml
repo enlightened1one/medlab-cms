@@ -3,7 +3,7 @@ services:
     name: medlab-api
     runtime: node
     plan: free
-    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/api build
+    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile --prod=false && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/api build
     startCommand: npx pnpm@9.12.0 --filter @medlab/api exec prisma migrate deploy --schema prisma/schema.prisma && node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:
@@ -56,7 +56,7 @@ services:
     name: medlab-web
     runtime: node
     plan: free
-    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/web build
+    buildCommand: npx pnpm@9.12.0 install --frozen-lockfile --prod=false && npx pnpm@9.12.0 --filter @medlab/shared-types build && npx pnpm@9.12.0 --filter @medlab/web build
     startCommand: npx pnpm@9.12.0 --filter @medlab/web start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_ENV
