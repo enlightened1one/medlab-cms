@@ -4,8 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @medlab/shared-types build && pnpm --filter @medlab/api build
-    preDeployCommand: pnpm --filter @medlab/api exec prisma migrate deploy --schema prisma/schema.prisma
-    startCommand: node apps/api/dist/main.js
+    startCommand: pnpm --filter @medlab/api exec prisma migrate deploy --schema prisma/schema.prisma && node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
