@@ -14,8 +14,6 @@ services:
         value: 4000
       - key: DATABASE_URL
         sync: false
-      - key: DIRECT_URL
-        sync: false
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_ACCESS_TTL
@@ -33,15 +31,15 @@ services:
       - key: ML_TIMEOUT_MS
         value: 5000
       - key: SMTP_HOST
-        sync: false
+        value: ""
       - key: SMTP_PORT
         value: 587
       - key: SMTP_USER
-        sync: false
+        value: ""
       - key: SMTP_PASS
-        sync: false
+        value: ""
       - key: EMAIL_FROM
-        sync: false
+        value: no-reply@medlab.local
 
   - type: web
     name: medlab-ml
